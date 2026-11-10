@@ -1,0 +1,17 @@
+# Secrets and environment files
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local backups
+*.bak
+*.before-*
+
+# Temporary and OS files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Override - S7comm Sabotage Simulator</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .dashboard {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            width: 750px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+        .header h2 { margin: 0; color: #fff; font-weight: 500; }
+        .btn {
+            background-color: #dc2626;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .btn:hover { background-color: #b91c1c; }
+        .btn:disabled { background-color: #475569; cursor: not-allowed; }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .panel {
+            background-color: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .panel h3 { margin-top: 0; color: #94a3b8; font-size: 16px; border-bottom: 1px solid #1e293b; padding-bottom: 8px;}
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .label { color: #cbd5e1; }
+        .value { font-weight: bold; }
+        .normal { color: #4ade80; }
+        .warning { color: #facc15; }
+        .critical { color: #f87171; }
+
+        .cmd-log {
+            background-color: #000;
+            border: 1px solid #333;
+            padding: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            color: #fb923c;
+            height: 60px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .flag-box {
+            background-color: #000;
+            border: 1px dashed #333;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 20px;
+            color: #333;
+            letter-spacing: 2px;
+            transition: all 0.5s;
+        }
+        .flag-box.revealed {
+            border-color: #4ade80;
+            color: #4ade80;
+            text-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="header">
+        <div>
+            <h2>Siemens S7comm Exploit Simulator</h2>
+            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Target: DB1 Manipulation | Win Cond: 3+ Equipment Failures</div>
+        </div>
+        <button id="nextBtn" class="btn" onclick="executeNextStep()">Inject Next Payload</button>
+    </div>
+
+    <div class="cmd-log" id="cmdLog">
+        > Awaiting execution...
+    </div>
+
+    <div class="grid-container">
+        <!-- System Control Panel -->
+        <div class="panel">
+            <h3>PLC Core Logic</h3>
+            <div class="stat-row">
+                <span class="label">Safety Interlocks:</span>
+                <span class="value normal" id="safetyStatus">ACTIVE</span>
+            </div>
+            <div class="stat-row">
+                <span class="label">Manual Mode (Byte 4):</span>
+                <span class="value normal" id="manualMode">0 (OFF)</span>
+            </div>
+        </div>
+
+        <!-- Water Tank Panel -->
+        <div class="panel">
+            <h3>Water Tank Subsystem</h3>
+            <div class="stat-row">
+                <span class="label">In Valve (Byte 0):</span>
+                <span class="value normal" id="wtIn">0 (CLOSED)</span>
+            </div>
+            <div class="stat-row">
+                <span class="label">Out Valve (Byte 1):</span>
+                <span class="value normal" id="wtOut">1 (OPEN)</span>
+            </div>
+            <div class="stat-row">
+                <span class="label">Fill Level / Status:</span>
+                <span class="value normal" id="wtStatus">45% / healthy</span>
+            </div>
+        </div>
+
+        <!-- Heat Exchanger Panel -->
+        <div class="panel">
+            <h3>Heat Exchanger Subsystem</h3>
+            <div class="stat-row">
+                <span class="label">Hot Temp Set (Byte 49):</span>
+                <span class="value normal" id="heSet">60</span>
+            </div>
+            <div class="stat-row">
+                <span class="label">Current Temp / Status:</span>
+                <span class="value normal" id="heStatus">61.2°C / healthy</span>
+            </div>
+        </div>
+
+        <!-- Chlorine Tank Panel -->
+        <div class="panel">
+            <h3>Chlorine Tank Subsystem</h3>
+            <div class="stat-row">
+                <span class="label">In Valve (Byte 10):</span>
+                <span class="value normal" id="ctIn">0 (CLOSED)</span>
+            </div>
+            <div class="stat-row">
+                <span class="label">Out Valve (Byte 11):</span>
+                <span class="value normal" id="ctOut">1 (OPEN)</span>
+            </div>
+            <div class="stat-row">
+                <span class="label">Fill Level / Status:</span>
+                <span class="value normal" id="ctStatus">30% / healthy</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="flag-box" id="flagOutput">
+        AWAITING WIN CONDITION...
+    </div>
+</div>
+
+<script>
+    let step = 0;
+
+    function logCmd(msg) {
+        document.getElementById('cmdLog').innerHTML = `> ${msg}`;
+    }
+
+    function executeNextStep() {
+        step++;
+
+        if (step === 1) {
+            logCmd("client.db_write(1, 4, [1]) -> Disabling safety logic");
+            document.getElementById('safetyStatus').innerText = "BYPASSED";
+            document.getElementById('safetyStatus').className = "value critical";
+            document.getElementById('manualMode').innerText = "1 (ON)";
+            document.getElementById('manualMode').className = "value warning";
+        }
+        else if (step === 2) {
+            logCmd("client.db_write(1, 0, [1]); client.db_write(1, 1, [0]) -> Flooding Water Tank");
+            document.getElementById('wtIn').innerText = "1 (OPEN)";
+            document.getElementById('wtIn').className = "value critical";
+            document.getElementById('wtOut').innerText = "0 (CLOSED)";
+            document.getElementById('wtOut').className = "value critical";
+            document.getElementById('wtStatus').innerText = "100% / over flow";
+            document.getElementById('wtStatus').className = "value critical";
+        }
+        else if (step === 3) {
+            logCmd("client.db_write(1, 49, [255]) -> Overheating Heat Exchanger");
+            document.getElementById('heSet').innerText = "255";
+            document.getElementById('heSet').className = "value critical";
+            document.getElementById('heStatus').innerText = "103.5°C / over heat";
+            document.getElementById('heStatus').className = "value critical";
+        }
+        else if (step === 4) {
+            logCmd("client.db_write(1, 10, [1]); client.db_write(1, 11, [0]) -> Flooding Chlorine Tank");
+            document.getElementById('ctIn').innerText = "1 (OPEN)";
+            document.getElementById('ctIn').className = "value critical";
+            document.getElementById('ctOut').innerText = "0 (CLOSED)";
+            document.getElementById('ctOut').className = "value critical";
+            document.getElementById('ctStatus').innerText = "100% / over flow";
+            document.getElementById('ctStatus').className = "value critical";
+
+            document.getElementById('nextBtn').innerText = "Poll HMI Status";
+            document.getElementById('nextBtn').style.backgroundColor = "#2563eb";
+        }
+        else if (step === 5) {
+            logCmd("GET /status -> 3 equipment disruptions confirmed.");
+            const flagBox = document.getElementById('flagOutput');
+            flagBox.innerText = "HTB{REDACTED}";
+            flagBox.className = "flag-box revealed";
+
+            document.getElementById('nextBtn').innerText = "Plant Compromised";
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('nextBtn').style.backgroundColor = "#475569";
+        }
+    }
+</script>
+
+</body>
+</html>
